@@ -12,7 +12,7 @@ class DeepSeekRouter:
     @router.post("/deepseek/generate")
     async def generate_response(self, request: DeepSeekRequest):
         try:
-            return {"status": "Healthy"}
+            return {request.role: request.message}
         
         except Exception:
-            raise Exception("You fucked up")
+            raise
