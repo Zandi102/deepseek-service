@@ -1,0 +1,11 @@
+aioresponses==0.7.7
+asyncio==3.4.3
+aiohttp==3.11.11
+async_lru==2.0.4
+dependency-injector==4.45.0
+fastapi==0.115.6
+fastapi_utils==0.8.0
+uvicorn==0.20.0
+starlette==0.41.3
+pydantic==2.10.5
+typing_inspect==0.9.0
