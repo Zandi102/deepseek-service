@@ -1,2 +1,8 @@
+# Exclude all __pycache__ directories
+src/routers/__pycache__/
 __pycache__/
+
+# Exclude compiled Python files
 *.pyc
+*.pyo
+*.pyd
