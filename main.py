@@ -4,8 +4,10 @@ from src.routers import deep_seek_router
 
 
 def create_app() -> FastAPI: 
-     app = FastAPI(title="Deep Seek API", 
-                           description="Application Interface Connecting to Deep-Seek-1 LLM")
+     app = FastAPI(
+          title="Deep Seek API",                   
+          description="Application Interface Connecting to Deep-Seek-1 LLM"
+          )
      
      
      app.include_router(deep_seek_router.router)
