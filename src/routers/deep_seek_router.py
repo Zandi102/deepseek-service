@@ -67,13 +67,13 @@ class DeepSeekRouter:
             # If no valid input after max_attempts, return default message
             return "Sorry, I couldn't catch that after several attempts."
 
-    @router.get('/nova')
+    @router.get('/ali')
     async def begin_ai_integration(self):    
         while True:
             try:
                 user_input = await self.listen()
 
-                for command in ["Nova exit", "Nova quit", "Nova stop"]:
+                for command in ["Ali exit", "Ali quit", "Ali stop"]:
                     if command in user_input:
                         await self.speak("Goodbye Alex!")
                         return
