@@ -1,4 +1,5 @@
 
+import asyncio
 from fastapi import APIRouter
 from fastapi_utils.cbv import cbv
 from src.entities.ollama_response import OllamaResponse
@@ -40,7 +41,7 @@ class DeepSeekRouter:
         engine.say(text)
         engine.runAndWait()
 
-    async def listen(self, max_attempts=3, timeout=10):
+    async def listen(self, max_attempts=2, timeout=30):
         recognizer = sr.Recognizer()
         with sr.Microphone() as source:
             print("Listening... Speak now!")
@@ -48,7 +49,7 @@ class DeepSeekRouter:
             attempts = 0
             while attempts < max_attempts:
                 try:
-                    audio = recognizer.listen(source, timeout=30)
+                    audio = recognizer.listen(source, timeout=timeout)
                     text = recognizer.recognize_google(audio)
                     print("You said:", text)
                     return text
@@ -79,36 +80,44 @@ class DeepSeekRouter:
                         return
                             
             except Exception as ex:
-                raise Exception(f'Error listening to user to to exception {str(ex)}')
+                raise Exception(f'Error listening to user due to exception {str(ex)}')
             
             try:
-                response_object = ollama.chat(
+                response_stream = await asyncio.to_thread(
+                    ollama.chat,
                     model=self.model_version,
                     messages=[{'role': 'user', 'content': user_input}],
-                    options={'num_predict': 100}  # Adjust to control response length
+                    stream=True
                 )
-                
-                if not response_object: 
-                    raise LookupError(f'Unable to retrieve ollama response from model: {self.model_version}')
-                
-                thoughts = re.search(r"<think>(.*?)</think>", 
-                                    response_object.message.content, 
-                                    re.DOTALL)
-                
-                ai_thoughts = thoughts.group(1).strip().replace('\n', '') \
-                    if thoughts else ""
 
-                ai_response = re.search(r"</think>\s*(.*)",
-                                        response_object.message.content,
-                                        re.DOTALL)
-                
-                ai_response = ai_response.group(1).strip().replace('\n', '') \
-                    if ai_response else ""
-                
-                ollama_response = OllamaResponse(thought_process=ai_thoughts, 
-                                                    response=ai_response)
+                full_response = ""
+                is_finished = False
+                for chunk in response_stream:
+                    if "message" in chunk and "content" in chunk["message"]:
+                        full_response += chunk["message"]["content"]  # Collect all response parts
 
-                await self.speak(ollama_response.response)
-                                    
+                    if 'message' in chunk and 'content' in chunk['message'] and not chunk['message']['content']:
+                        is_finished = True
+                        break 
+
+                # Ensure full response has been received
+                if not full_response.strip() or not is_finished:
+                    raise ValueError("Ollama response is empty or not finished properly.")
+
+                print(f"Full AI Response: {full_response}")
+
+                thoughts = re.search(r"<think>(.*?)</think>", full_response, re.DOTALL)
+                ai_thoughts = thoughts.group(1).strip().replace('\n', '') if thoughts else ""
+
+                ai_response = re.search(r"</think>\s*(.*)", full_response, re.DOTALL)
+                ai_response = ai_response.group(1).strip().replace('\n', '') if ai_response else ""
+
+                ollama_response = OllamaResponse(thought_process=ai_thoughts, response=ai_response)
+                
+                print(f'Speaking: {ai_response}') 
+
+                await self.speak(ollama_response.response)  
+                
             except Exception as ex:
-                raise ex
+                print(f"Error in AI response: {str(ex)}")
+                await self.speak("Sorry, I encountered an issue processing your request.")
