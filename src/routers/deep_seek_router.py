@@ -41,32 +41,39 @@ class DeepSeekRouter:
         engine.say(text)
         engine.runAndWait()
 
-    async def listen(self, max_attempts=2, timeout=30):
+    async def listen(self, max_attempts=2, timeout=15):
         recognizer = sr.Recognizer()
         with sr.Microphone() as source:
-            print("Listening... Speak now!")
             recognizer.adjust_for_ambient_noise(source)
             attempts = 0
             while attempts < max_attempts:
                 try:
+                    print("Listening... Speak now!")
                     audio = recognizer.listen(source, timeout=timeout)
                     text = recognizer.recognize_google(audio)
                     print("You said:", text)
                     return text
+                
                 except sr.UnknownValueError:
                     print("Could not understand the audio, retrying...")
-                    await self.speak("Sorry, I couldn't understand that, please repeat.")
+                    recognizer.pause_threshold = float('inf')
+                    await self.speak("Sorry, I couldn't understand that, please repeat.") if attempts != 1 else await self.speak("Goodbye, Alex")
+                    recognizer.pause_threshold = 0.8
                 except sr.RequestError:
                     print("Speech recognition service is unavailable, retrying...")
-                    await self.speak("Sorry, the speech recognition service is unavailable.")
+                    recognizer.pause_threshold = float('inf')
+                    await self.speak("Sorry, the speech recognition service is unavailable.") if attempts != 1 else await self.speak("Goodbye, Alex")
+                    recognizer.pause_threshold = 0.8
                 except Exception as e:
                     print(f"Error during listening: {str(e)}")
-                    await self.speak("Sorry, there was an error, please try again.")
+                    recognizer.pause_threshold = float('inf')
+                    await self.speak("Sorry, there was an error, please try again.") if attempts != 1 else await self.speak("Goodbye, Alex")
+                    recognizer.pause_threshold = 0.8
                 
                 attempts += 1
-            
-            # If no valid input after max_attempts, return default message
-            return "Sorry, I couldn't catch that after several attempts."
+
+            raise Exception("User did not respond")
+        
 
     @router.get('/ali')
     async def begin_ai_integration(self):    
@@ -74,7 +81,7 @@ class DeepSeekRouter:
             try:
                 user_input = await self.listen()
 
-                for command in ["Ali exit", "Ali quit", "Ali stop"]:
+                for command in ["Alierium exit", "Alierium quit", "Alierium stop"]:
                     if command in user_input:
                         await self.speak("Goodbye Alex!")
                         return
