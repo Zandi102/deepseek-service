@@ -41,7 +41,7 @@ class DeepSeekRouter:
         engine.say(text)
         engine.runAndWait()
 
-    async def listen(self, max_attempts=2, timeout=15):
+    async def listen(self, max_attempts=2, timeout=15) -> str:
         recognizer = sr.Recognizer()
         with sr.Microphone() as source:
             recognizer.adjust_for_ambient_noise(source)
@@ -58,17 +58,17 @@ class DeepSeekRouter:
                     print("Could not understand the audio, retrying...")
                     recognizer.pause_threshold = float('inf')
                     await self.speak("Sorry, I couldn't understand that, please repeat.") if attempts != 1 else await self.speak("Goodbye, Alex")
-                    recognizer.pause_threshold = 0.8
+                    recognizer.pause_threshold = 1
                 except sr.RequestError:
                     print("Speech recognition service is unavailable, retrying...")
                     recognizer.pause_threshold = float('inf')
                     await self.speak("Sorry, the speech recognition service is unavailable.") if attempts != 1 else await self.speak("Goodbye, Alex")
-                    recognizer.pause_threshold = 0.8
-                except Exception as e:
+                    recognizer.pause_threshold = 1
+                except Exception:
                     print(f"Error during listening: {str(e)}")
                     recognizer.pause_threshold = float('inf')
                     await self.speak("Sorry, there was an error, please try again.") if attempts != 1 else await self.speak("Goodbye, Alex")
-                    recognizer.pause_threshold = 0.8
+                    recognizer.pause_threshold = 1
                 
                 attempts += 1
 
@@ -81,8 +81,8 @@ class DeepSeekRouter:
             try:
                 user_input = await self.listen()
 
-                for command in ["Alierium exit", "Alierium quit", "Alierium stop"]:
-                    if command in user_input:
+                for command in ["Ali exit", "Ali quit", "Ali stop"]:
+                    if command.lower() in user_input.lower():
                         await self.speak("Goodbye Alex!")
                         return
                             
@@ -94,22 +94,10 @@ class DeepSeekRouter:
                     ollama.chat,
                     model=self.model_version,
                     messages=[{'role': 'user', 'content': user_input}],
-                    stream=True
+                    stream=False
                 )
 
-                full_response = ""
-                is_finished = False
-                for chunk in response_stream:
-                    if "message" in chunk and "content" in chunk["message"]:
-                        full_response += chunk["message"]["content"]  # Collect all response parts
-
-                    if 'message' in chunk and 'content' in chunk['message'] and not chunk['message']['content']:
-                        is_finished = True
-                        break 
-
-                # Ensure full response has been received
-                if not full_response.strip() or not is_finished:
-                    raise ValueError("Ollama response is empty or not finished properly.")
+                full_response = response_stream.message.content
 
                 print(f"Full AI Response: {full_response}")
 
