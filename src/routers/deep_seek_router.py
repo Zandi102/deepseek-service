@@ -65,7 +65,7 @@ class DeepSeekRouter:
                     await self.speak("Sorry, the speech recognition service is unavailable.") if attempts != 1 else await self.speak("Goodbye, Alex")
                     recognizer.pause_threshold = 1
                 except Exception:
-                    print(f"Error during listening: {str(e)}")
+                    print(f"Error during listening")
                     recognizer.pause_threshold = float('inf')
                     await self.speak("Sorry, there was an error, please try again.") if attempts != 1 else await self.speak("Goodbye, Alex")
                     recognizer.pause_threshold = 1
