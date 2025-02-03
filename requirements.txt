@@ -16,3 +16,4 @@ pyaudio==0.2.14
 edge_tts==7.0.0
 pygame==2.6.1
 http-status==1.0.0
+six==1.17.0
