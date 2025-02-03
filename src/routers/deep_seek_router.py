@@ -69,7 +69,7 @@ class DeepSeekRouter:
                     return
                         
         except Exception as ex:
-            return Status(code=400, description_fail=f"Failure during listening process due to Exception {str(ex)}")
+            return Status(code=400, name_fail="SpeechRecognition Listener Exception", description_fail=f"Failure during listening process due to Exception {str(ex)}")
         
         try:
             response_stream = await asyncio.to_thread(
@@ -91,9 +91,9 @@ class DeepSeekRouter:
             
             await self.speak(ollama_response.response) 
             
-            return Status(code=200)
+            return Status(code=200, name_fail=None, description_fail=None)
             
         except Exception as ex:
             print(f"Error in AI response: {str(ex)}")
             await self.speak("Sorry, I encountered an issue processing your request.")
-            return Status(code=400, description_fail=f"Failure to generate AI response due to error {str(ex)}")
+            return Status(code=400, name_fail="AI Generation Exception", description_fail=f"Failure to generate AI response due to error {str(ex)}")
