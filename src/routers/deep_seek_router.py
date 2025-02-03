@@ -3,13 +3,10 @@ import asyncio
 from fastapi import APIRouter
 from fastapi_utils.cbv import cbv
 from src.entities.ollama_response import OllamaResponse
-from src.entities.deep_seek_request import DeepSeekRequest
 import ollama
 import re
 import speech_recognition as sr
 import pyttsx3
-import pygame
-import edge_tts
 from http_status import Status
 
 router = APIRouter()

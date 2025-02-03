@@ -1,9 +1,5 @@
-import asyncio
 from fastapi import FastAPI
-import ollama
-import pygame
 import uvicorn 
-from src.routers.deep_seek_router import DeepSeekRouter
 from src.routers import deep_seek_router
 
 
