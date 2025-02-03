@@ -10,6 +10,7 @@ import speech_recognition as sr
 import pyttsx3
 import pygame
 import edge_tts
+from http_status import Status
 
 router = APIRouter()
 
@@ -17,24 +18,6 @@ router = APIRouter()
 class DeepSeekRouter:
     def __init__(self):
         self.model_version = "deepseek-r1:1.5b"        
-        
-    # TODO Microsoft version
-    # async def speak(self, text):
-    #     # Generate speech and save to a file
-    #     communicate = edge_tts.Communicate(text, "en-US-AriaNeural")
-    #     await communicate.save("output.mp3")
-        
-    #     await self.play_sound()
-    
-    # @staticmethod
-    # async def play_sound():
-    #     pygame.mixer.init()
-    #     pygame.mixer.music.load("output.mp3")
-    #     pygame.mixer.music.play()
-    
-        # while pygame.mixer.music.get_busy():
-        #     await asyncio.sleep(0.1)
-        
     
     async def speak(self, text):
         engine = pyttsx3.init()
@@ -75,44 +58,42 @@ class DeepSeekRouter:
             raise Exception("User did not respond")
         
 
-    @router.get('/ali')
+    @router.get('/alix')
     async def begin_ai_integration(self):    
-        while True:
-            try:
-                user_input = await self.listen()
+        try:
+            user_input = await self.listen()
 
-                for command in ["Ali exit", "Ali quit", "Ali stop"]:
-                    if command.lower() in user_input.lower():
-                        await self.speak("Goodbye Alex!")
-                        return
-                            
-            except Exception as ex:
-                raise Exception(f'Error listening to user due to exception {str(ex)}')
+            for command in ["alex exit", "alex quit", "alex stop"]:
+                if command in user_input.lower():
+                    await self.speak("Goodbye Alex!")
+                    return
+                        
+        except Exception as ex:
+            return Status(code=400, description_fail=f"Failure during listening process due to Exception {str(ex)}")
+        
+        try:
+            response_stream = await asyncio.to_thread(
+                ollama.chat,
+                model=self.model_version,
+                messages=[{'role': 'user', 'content': user_input}],
+                stream=False
+            )
+
+            full_response = response_stream.message.content
+
+            thoughts = re.search(r"<think>(.*?)</think>", full_response, re.DOTALL)
+            ai_thoughts = thoughts.group(1).strip().replace('\n', '') if thoughts else ""
+
+            ai_response = re.search(r"</think>\s*(.*)", full_response, re.DOTALL)
+            ai_response = ai_response.group(1).strip().replace('\n', '') if ai_response else ""
+
+            ollama_response = OllamaResponse(thought_process=ai_thoughts, response=ai_response)
             
-            try:
-                response_stream = await asyncio.to_thread(
-                    ollama.chat,
-                    model=self.model_version,
-                    messages=[{'role': 'user', 'content': user_input}],
-                    stream=False
-                )
-
-                full_response = response_stream.message.content
-
-                print(f"Full AI Response: {full_response}")
-
-                thoughts = re.search(r"<think>(.*?)</think>", full_response, re.DOTALL)
-                ai_thoughts = thoughts.group(1).strip().replace('\n', '') if thoughts else ""
-
-                ai_response = re.search(r"</think>\s*(.*)", full_response, re.DOTALL)
-                ai_response = ai_response.group(1).strip().replace('\n', '') if ai_response else ""
-
-                ollama_response = OllamaResponse(thought_process=ai_thoughts, response=ai_response)
-                
-                print(f'Speaking: {ai_response}') 
-
-                await self.speak(ollama_response.response)  
-                
-            except Exception as ex:
-                print(f"Error in AI response: {str(ex)}")
-                await self.speak("Sorry, I encountered an issue processing your request.")
+            await self.speak(ollama_response.response) 
+            
+            return Status(code=200)
+            
+        except Exception as ex:
+            print(f"Error in AI response: {str(ex)}")
+            await self.speak("Sorry, I encountered an issue processing your request.")
+            return Status(code=400, description_fail=f"Failure to generate AI response due to error {str(ex)}")
