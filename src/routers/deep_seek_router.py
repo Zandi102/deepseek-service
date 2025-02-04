@@ -15,6 +15,11 @@ router = APIRouter()
 class SpeechInput(BaseModel):
     text: str
 
+
+@router.get("/")
+def home():
+    return {"message": "Deep Seek API is running! Send a POST request to `/alix` to interact with the AI."}
+
 @cbv(router)
 class DeepSeekRouter:
     def __init__(self):
